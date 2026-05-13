@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --coral: #e8564a;
+  --surface: #f2f2f2;
+  --ink: #1a1a1a;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+.loading-dot {
+  display: inline-block;
+  height: 6px;
+  width: 6px;
+  border-radius: 9999px;
+  background: var(--coral);
+  animation: saheli-dot 1.1s ease-in-out infinite;
+}
+
+.animation-delay-150 {
+  animation-delay: 0.15s;
+}
+
+.animation-delay-300 {
+  animation-delay: 0.3s;
+}
+
+@keyframes saheli-dot {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+.saheli-splash-bar {
+  width: 0%;
+  animation: saheli-bar-fill 2.5s linear forwards;
+}
+
+@keyframes saheli-bar-fill {
+  to {
+    width: 100%;
+  }
+}
+
+.follow-chips-enter {
+  animation: follow-chips-in 420ms ease 300ms both;
+}
+
+@keyframes follow-chips-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Onboarding — rich background + content motion */
+@keyframes onboard-blob-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(18px, -14px) scale(1.08);
+  }
+}
+
+@keyframes onboard-blob-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-22px, 12px) scale(1.06);
+  }
+}
+
+@keyframes onboard-content-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes onboard-emoji-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.onboard-blob-a {
+  animation: onboard-blob-a 14s ease-in-out infinite;
+}
+
+.onboard-blob-b {
+  animation: onboard-blob-b 18s ease-in-out infinite;
+}
+
+.onboard-content-in {
+  animation: onboard-content-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.onboard-emoji-float {
+  animation: onboard-emoji-float 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboard-blob-a,
+  .onboard-blob-b,
+  .onboard-content-in,
+  .onboard-emoji-float {
+    animation: none !important;
+  }
+}
