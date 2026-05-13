@@ -6,7 +6,7 @@ Mobile-first Next.js chat assistant for Anganwadi workers under **POSHAN Abhiyaa
 
 - **Splash** — Branded intro on first visit (skipped if onboarding is already complete).
 - **Onboarding** — Three swipeable slides; **Skip** or **Get Started** saves progress in `localStorage` (`saheli_onboarded=true`).
-- **Chat** — Streaming replies via Groq (`llama-3.1-8b-instant`).
+- **Chat** — Replies via Groq (`llama-3.1-8b-instant`); responses are returned in one piece for reliable Vercel serverless behaviour (not streamed token-by-token).
 - **Follow-up chips** — After each assistant reply, contextual suggestions from `/api/suggestions`.
 - **Offline banner** — Warns when the device is offline (uses `navigator.onLine` and browser events).
 
@@ -31,7 +31,20 @@ npm run dev
 
 ## Deploy (Vercel)
 
-Connect the repo, set `GROQ_API_KEY` in project **Environment Variables**, and deploy. No extra framework config is required.
+1. Import the GitHub repo in [Vercel](https://vercel.com).
+2. **Environment variables** → add **`GROQ_API_KEY`** with your Groq secret.
+3. Enable it for **Production** (and **Preview** if you want previews to work).
+4. **Redeploy** after adding or changing env vars (Deployments → … → Redeploy).
+
+API routes use **`runtime = "nodejs"`**, **`maxDuration = 10`** (fits Vercel Hobby), and call Groq’s HTTP API directly (no `groq-sdk`) for stable serverless behaviour.
+
+### “Could not connect” / chat never loads
+
+| Check | Action |
+|--------|--------|
+| **`GROQ_API_KEY` missing** | In Vercel → **Settings → Environment Variables**: add the key for **every** environment you use (**Production** and **Preview**). Preview URLs like `*-projects.vercel.app` only see Preview env. |
+| Old deploy | **Redeploy** after saving env vars. |
+| Still 502 | **Deployments → [deployment] → Logs** while sending a message; errors are logged as `[api/chat]`. |
 
 ## Reset onboarding (development)
 
@@ -45,6 +58,7 @@ location.reload();
 ## Project layout
 
 - `app/page.tsx` — Routes splash → onboarding → main chat.
-- `app/api/chat/route.ts` — Streaming chat completions.
+- `app/api/chat/route.ts` — Chat completion via Groq (plain text).
 - `app/api/suggestions/route.ts` — JSON follow-up question suggestions.
-- `components/` — UI pieces (`SplashScreen`, `Onboarding`, `OfflineBanner`, `ChatLayout`, chat UI).
+- `lib/groqChatCompletion.ts` — Groq REST helper (no SDK).
+- `components/` — UI (`SplashScreen`, `Onboarding`, `OfflineBanner`, `ChatLayout`, chat).

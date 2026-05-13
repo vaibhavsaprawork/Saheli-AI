@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const SPLASH_MS = 2500;
 const FADE_MS = 300;
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export function SplashScreen({ onComplete }: Props) {
+  const { t } = useLanguage();
   const [fadeOut, setFadeOut] = useState(false);
   const onDoneRef = useRef(onComplete);
   onDoneRef.current = onComplete;
@@ -36,13 +38,13 @@ export function SplashScreen({ onComplete }: Props) {
           <span className="text-[80px] font-bold leading-none text-coral">SA</span>
         </div>
         <h1 className="mt-8 text-center text-[28px] font-bold leading-tight text-white">
-          Saheli AI
+          {t.splashTitle}
         </h1>
         <p className="mt-2 text-center text-base font-light text-white">
-          Aapki Swasthya Saheli
+          {t.splashTagline}
         </p>
         <p className="mt-1 text-center text-xs font-normal text-white/80">
-          (Your Health Companion)
+          {t.splashTaglineEn}
         </p>
 
         <div className="mt-10 h-1 w-[200px] overflow-hidden rounded-full bg-white/25">
@@ -51,7 +53,7 @@ export function SplashScreen({ onComplete }: Props) {
       </div>
 
       <p className="pb-[max(1rem,env(safe-area-inset-bottom))] text-center text-xs text-white/70">
-        Powered by POSHAN Abhiyaan
+        {t.splashPowered}
       </p>
     </div>
   );

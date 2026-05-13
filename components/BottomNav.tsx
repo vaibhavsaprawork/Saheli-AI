@@ -1,7 +1,7 @@
 "use client";
 
 import { Home, Users, MessageCircle, MoreHorizontal } from "lucide-react";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage } from "@/lib/LanguageContext";
 
 export function BottomNav() {
   const { t } = useLanguage();

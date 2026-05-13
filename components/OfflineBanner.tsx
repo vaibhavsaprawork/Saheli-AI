@@ -1,48 +1,48 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { WifiOff } from "lucide-react";
+import { Wifi, WifiOff } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
-const HIDE_DELAY_MS = 2000;
+const ONLINE_FLASH_MS = 2000;
 const TRANSITION_MS = 300;
 
+type BannerMode = "hidden" | "offline" | "online";
+
 export function OfflineBanner() {
-  const [open, setOpen] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+  const { t } = useLanguage();
+  const [mode, setMode] = useState<BannerMode>(() =>
+    typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "hidden",
+  );
   const hideTimerRef = useRef<number | null>(null);
-  const openRef = useRef(false);
+  const wasOfflineRef = useRef(false);
 
-  openRef.current = open;
-
-  useEffect(() => {
-    if (typeof navigator !== "undefined" && !navigator.onLine) {
-      setOpen(true);
+  const clearTimer = () => {
+    if (hideTimerRef.current != null) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
     }
-  }, []);
+  };
 
   useEffect(() => {
-    const clearTimer = () => {
-      if (hideTimerRef.current) {
-        window.clearTimeout(hideTimerRef.current);
-        hideTimerRef.current = null;
-      }
-    };
-
     const onOffline = () => {
       clearTimer();
-      setLeaving(false);
-      setOpen(true);
+      wasOfflineRef.current = true;
+      setMode("offline");
     };
 
     const onOnline = () => {
-      if (!openRef.current) return;
-      setLeaving(true);
       clearTimer();
-      hideTimerRef.current = window.setTimeout(() => {
-        setOpen(false);
-        setLeaving(false);
-        hideTimerRef.current = null;
-      }, HIDE_DELAY_MS);
+      if (wasOfflineRef.current) {
+        wasOfflineRef.current = false;
+        setMode("online");
+        hideTimerRef.current = window.setTimeout(() => {
+          setMode("hidden");
+          hideTimerRef.current = null;
+        }, ONLINE_FLASH_MS);
+      } else {
+        setMode("hidden");
+      }
     };
 
     window.addEventListener("online", onOnline);
@@ -54,6 +54,8 @@ export function OfflineBanner() {
     };
   }, []);
 
+  const open = mode !== "hidden";
+
   return (
     <div
       className="relative z-20 shrink-0 overflow-hidden transition-[max-height] ease-in-out"
@@ -63,17 +65,24 @@ export function OfflineBanner() {
       }}
       aria-live="polite"
     >
-      <div
-        className={`flex items-center gap-3 bg-[#D32F2F] px-4 py-2.5 text-[13px] leading-snug text-white transition-[transform,opacity] ease-in-out ${
-          leaving ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"
-        }`}
-        style={{ transitionDuration: `${TRANSITION_MS}ms` }}
-      >
-        <WifiOff className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
-        <p className="min-w-0 flex-1 font-medium">
-          You are offline. Questions will be sent when connection restores.
-        </p>
-      </div>
+      {mode === "offline" && (
+        <div
+          className="flex items-center gap-3 bg-[#D32F2F] px-4 py-2.5 text-[13px] leading-snug text-white transition-[transform,opacity] ease-in-out translate-y-0 opacity-100"
+          style={{ transitionDuration: `${TRANSITION_MS}ms` }}
+        >
+          <WifiOff className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
+          <p className="min-w-0 flex-1 font-medium">{t.offlineText}</p>
+        </div>
+      )}
+      {mode === "online" && (
+        <div
+          className="flex items-center gap-3 bg-emerald-700 px-4 py-2.5 text-[13px] leading-snug text-white transition-[transform,opacity] ease-in-out translate-y-0 opacity-100"
+          style={{ transitionDuration: `${TRANSITION_MS}ms` }}
+        >
+          <Wifi className="h-5 w-5 shrink-0 text-white" strokeWidth={2} aria-hidden />
+          <p className="min-w-0 flex-1 font-medium">{t.backOnlineText}</p>
+        </div>
+      )}
     </div>
   );
 }

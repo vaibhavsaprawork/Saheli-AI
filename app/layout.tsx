@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans } from "next/font/google";
 import "./globals.css";
-import { LanguageProvider } from "@/lib/i18n";
+import { LanguageProvider } from "@/lib/LanguageContext";
 
 const inter = Inter({
   subsets: ["latin"],

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage } from "@/lib/LanguageContext";
 import type { AppLocale } from "@/lib/systemPrompt";
+import type { Language } from "@/lib/translations";
 import { ChatWindow } from "@/components/ChatWindow";
 import { InputBar } from "@/components/InputBar";
 import type { UiMessage } from "@/components/MessageBubble";
@@ -26,7 +27,11 @@ function lastUserContent(messages: UiMessage[]): string {
   return "";
 }
 
-async function fetchFollowUps(lastQuestion: string, lastAnswer: string): Promise<string[]> {
+async function fetchFollowUps(
+  lastQuestion: string,
+  lastAnswer: string,
+  language: Language,
+): Promise<string[]> {
   if (typeof navigator !== "undefined" && !navigator.onLine) {
     return [];
   }
@@ -37,6 +42,7 @@ async function fetchFollowUps(lastQuestion: string, lastAnswer: string): Promise
       body: JSON.stringify({
         lastQuestion,
         lastAnswer: lastAnswer.slice(0, 6000),
+        language,
       }),
     });
     if (!res.ok) return [];
@@ -55,7 +61,7 @@ async function fetchFollowUps(lastQuestion: string, lastAnswer: string): Promise
 }
 
 export function SaheliChat() {
-  const { locale } = useLanguage();
+  const { language, t } = useLanguage();
   const [messages, setMessages] = useState<UiMessage[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -95,7 +101,8 @@ export function SaheliChat() {
         res = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: payload, locale: appLocale }),
+          body: JSON.stringify({ messages: payload, language: appLocale }),
+          cache: "no-store",
         });
       } catch {
         setMessages((prev) =>
@@ -103,10 +110,7 @@ export function SaheliChat() {
             m.id === assistantId
               ? {
                   ...m,
-                  content:
-                    appLocale === "hi"
-                      ? "नेटवर्क त्रुटि। कृपया दोबारा कोशिश करें।"
-                      : "Network error. Please try again.",
+                  content: t.serverConfigError,
                   streaming: false,
                 }
               : m,
@@ -116,7 +120,7 @@ export function SaheliChat() {
       }
 
       if (!res.ok) {
-        let errText = appLocale === "hi" ? "कुछ गलत हो गया।" : "Something went wrong.";
+        let errText: string = t.somethingWrong;
         try {
           const j = (await res.json()) as { error?: string };
           if (j.error) errText = j.error;
@@ -131,15 +135,16 @@ export function SaheliChat() {
         return;
       }
 
-      const reader = res.body?.getReader();
-      if (!reader) {
+      let accumulated = "";
+      try {
+        accumulated = await res.text();
+      } catch {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
               ? {
                   ...m,
-                  content:
-                    appLocale === "hi" ? "उत्तर नहीं मिला।" : "No response body.",
+                  content: t.readResponseError,
                   streaming: false,
                 }
               : m,
@@ -148,29 +153,13 @@ export function SaheliChat() {
         return;
       }
 
-      const decoder = new TextDecoder();
-      let accumulated = "";
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          accumulated += decoder.decode(value, { stream: true });
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: accumulated } : m,
-            ),
-          );
-        }
-      } catch {
+      if (!accumulated.trim()) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
               ? {
                   ...m,
-                  content:
-                    accumulated ||
-                    (appLocale === "hi" ? "पढ़ने में त्रुटि।" : "Could not read response."),
+                  content: t.noResponseBody,
                   streaming: false,
                 }
               : m,
@@ -188,13 +177,13 @@ export function SaheliChat() {
       const trimmed = accumulated.trim();
       if (trimmed.length > 0) {
         const lastQ = lastUserContent(nextMessages);
-        const chips = await fetchFollowUps(lastQ, trimmed);
+        const chips = await fetchFollowUps(lastQ, trimmed, appLocale);
         if (chips.length >= 2) {
           setFollowUps(chips.slice(0, 3));
         }
       }
     },
-    [],
+    [t],
   );
 
   const sendText = useCallback(
@@ -215,10 +204,10 @@ export function SaheliChat() {
       setMessages(next);
       setInput("");
       setBusy(true);
-      await runAssistant(next, locale);
+      await runAssistant(next, language);
       setBusy(false);
     },
-    [busy, messages, locale, runAssistant],
+    [busy, messages, language, runAssistant],
   );
 
   return (
@@ -231,7 +220,7 @@ export function SaheliChat() {
         onFollowUpPick={(q) => void sendText(q)}
         scrollRef={scrollRef}
         endRef={endRef}
-        locale={locale}
+        language={language}
       />
 
       <InputBar
@@ -239,6 +228,7 @@ export function SaheliChat() {
         onChange={setInput}
         disabled={busy}
         onSend={() => void sendText(input)}
+        language={language}
       />
     </>
   );

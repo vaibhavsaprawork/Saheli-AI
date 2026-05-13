@@ -1,8 +1,16 @@
-export type AppLocale = "en" | "hi";
+import type { Language } from "@/lib/translations";
 
-export function getSystemPrompt(appLocale: AppLocale): string {
+export type AppLocale = Language;
+
+export function getLanguageAppend(language: Language): string {
+  return language === "hi"
+    ? "\n\nIMPORTANT: You must respond ONLY in Hindi (Devanagari script). Every word of your response must be in Hindi. Do not use any English words except medical terms like SAM, NRC, POSHAN, AWW, ANM."
+    : "\n\nRespond in clear simple English.";
+}
+
+export function getSystemPrompt(language: Language): string {
   const localeRule =
-    appLocale === "hi"
+    language === "hi"
       ? `
 Language and script (follow strictly):
 - The app UI is set to Hindi. Reply in Hindi for almost all answers unless the worker’s message is clearly only in English (then you may reply in English).
@@ -36,7 +44,7 @@ Rules:
 - Keep answers short and actionable (AWWs are busy in the field)
 - Use bullet points for steps
 ${
-  appLocale === "hi"
+  language === "hi"
     ? "- For any Hindi you write: use देवनागरी script only. Never spell Hindi using English/Roman letters in the body of the answer.\n"
     : ""
 }- Formatting: Do NOT use Markdown or any special markup (no **, *, #, _, backticks). Write plain text only. Start list lines with a dash and a space (e.g. "- Step one") or use "• " after a newline so it displays clearly on phones.

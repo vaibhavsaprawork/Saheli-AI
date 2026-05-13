@@ -1,9 +1,13 @@
-import Groq from "groq-sdk";
-import { getSystemPrompt, type AppLocale } from "@/lib/systemPrompt";
+import {
+  getLanguageAppend,
+  getSystemPrompt,
+  type AppLocale,
+} from "@/lib/systemPrompt";
+import { groqChatCompletion } from "@/lib/groqChatCompletion";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 10;
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -16,79 +20,85 @@ function isChatMessage(x: unknown): x is ChatMessage {
   );
 }
 
+function parseLanguage(b: Record<string, unknown>): AppLocale {
+  const lang = b.language ?? b.locale;
+  return lang === "hi" ? "hi" : "en";
+}
+
 export async function POST(req: Request) {
-  if (!process.env.GROQ_API_KEY) {
+  const apiKey = process.env.GROQ_API_KEY?.trim();
+  if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: "Server misconfiguration: GROQ_API_KEY is not set." }),
+      JSON.stringify({
+        error:
+          "GROQ_API_KEY is not set. In Vercel: Settings → Environment Variables → add for Production and Preview, then Redeploy.",
+      }),
       { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 
-  let body: unknown;
   try {
-    body = await req.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-  const b = body as Record<string, unknown>;
-  const rawMessages = b.messages;
-  const locale: AppLocale = b.locale === "hi" ? "hi" : "en";
+    const b = body as Record<string, unknown>;
+    const rawMessages = b.messages;
+    const language = parseLanguage(b);
 
-  if (!Array.isArray(rawMessages)) {
-    return new Response(JSON.stringify({ error: "messages must be an array." }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+    if (!Array.isArray(rawMessages)) {
+      return new Response(JSON.stringify({ error: "messages must be an array." }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
-  const messages = rawMessages.filter(isChatMessage);
-  if (messages.length !== rawMessages.length) {
-    return new Response(
-      JSON.stringify({ error: "Each message must have role user|assistant and string content." }),
-      { status: 400, headers: { "Content-Type": "application/json" } },
-    );
-  }
+    const messages = rawMessages.filter(isChatMessage);
+    if (messages.length !== rawMessages.length) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Each message must have role user|assistant and string content.",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } },
+      );
+    }
 
-  try {
-    const stream = await groq.chat.completions.create({
+    const systemContent =
+      getSystemPrompt(language) + getLanguageAppend(language);
+
+    const result = await groqChatCompletion({
+      apiKey,
+      messages: [{ role: "system", content: systemContent }, ...messages],
       model: "llama-3.1-8b-instant",
-      messages: [
-        { role: "system", content: getSystemPrompt(locale) },
-        ...messages,
-      ],
-      stream: true,
-      max_tokens: 1024,
+      max_tokens: 512,
       temperature: 0.7,
     });
 
-    const encoder = new TextEncoder();
-    const readable = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of stream) {
-            const text = chunk.choices[0]?.delta?.content || "";
-            if (text) controller.enqueue(encoder.encode(text));
-          }
-        } catch (e) {
-          controller.error(e);
-          return;
-        }
-        controller.close();
-      },
-    });
+    if (!result.ok) {
+      return new Response(
+        JSON.stringify({ error: result.error }),
+        {
+          status: result.status >= 400 && result.status < 600 ? result.status : 502,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
 
-    return new Response(readable, {
+    return new Response(result.text, {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : "Groq request failed.";
+    const message = err instanceof Error ? err.message : "Unexpected server error";
+    console.error("[api/chat]", err);
     return new Response(JSON.stringify({ error: message }), {
-      status: 502,
+      status: 500,
       headers: { "Content-Type": "application/json" },
     });
   }

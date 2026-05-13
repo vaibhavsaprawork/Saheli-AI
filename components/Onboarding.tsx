@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ChevronRight, Sparkles } from "lucide-react";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const SLIDE_COUNT = 3;
 const ONBOARD_KEY = "saheli_onboarded";
@@ -10,34 +11,36 @@ type Props = {
   onComplete: () => void;
 };
 
-const slides = [
-  {
-    emoji: "👩‍⚕️",
-    title: "Namaskar, Saheli!",
-    subtitle:
-      "I am your AI health assistant, here to help you with nutrition, anemia, and child health guidance.",
-    accent: "from-coral to-[#c73d32]",
-    chip: "POSHAN",
-  },
-  {
-    emoji: "🤱",
-    title: "Ask Anything",
-    subtitle:
-      "Get instant answers on breastfeeding, stunting, dietary counselling, and POSHAN guidelines — anytime, anywhere.",
-    accent: "from-[#ff7a6e] to-coral",
-    chip: "24×7",
-  },
-  {
-    emoji: "🌐",
-    title: "Works Offline Too",
-    subtitle:
-      "No internet? No problem. Saheli AI saves your questions and answers them when you're back online.",
-    accent: "from-coral via-[#e87064] to-[#b8443a]",
-    chip: "Sync",
-  },
-] as const;
-
 export function Onboarding({ onComplete }: Props) {
+  const { t } = useLanguage();
+  const slides = useMemo(
+    () =>
+      [
+        {
+          emoji: "👩‍⚕️",
+          title: t.slide1Title,
+          subtitle: t.slide1Subtitle,
+          accent: "from-coral to-[#c73d32]",
+          chip: t.onboardChip1,
+        },
+        {
+          emoji: "🤱",
+          title: t.slide2Title,
+          subtitle: t.slide2Subtitle,
+          accent: "from-[#ff7a6e] to-coral",
+          chip: t.onboardChip2,
+        },
+        {
+          emoji: "🌐",
+          title: t.slide3Title,
+          subtitle: t.slide3Subtitle,
+          accent: "from-coral via-[#e87064] to-[#b8443a]",
+          chip: t.onboardChip3,
+        },
+      ] as const,
+    [t],
+  );
+
   const [index, setIndex] = useState(0);
   const [exiting, setExiting] = useState(false);
   const touchStartX = useRef<number | null>(null);
@@ -81,7 +84,6 @@ export function Onboarding({ onComplete }: Props) {
         exiting ? "pointer-events-none scale-[0.98] opacity-0" : "scale-100 opacity-100"
       }`}
     >
-      {/* Layered background — app-like, not flat white */}
       <div
         className="absolute inset-0 bg-gradient-to-b from-coral via-[#ea5e52] to-surface"
         aria-hidden
@@ -99,7 +101,6 @@ export function Onboarding({ onComplete }: Props) {
         aria-hidden
       />
 
-      {/* Floating orbs */}
       <div
         className="onboard-blob-a pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-white/25 blur-3xl motion-reduce:opacity-30"
         aria-hidden
@@ -114,12 +115,11 @@ export function Onboarding({ onComplete }: Props) {
       />
 
       <div className="relative flex h-full min-h-dvh flex-col">
-        {/* Top bar */}
         <div className="flex shrink-0 items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1.5 backdrop-blur-md">
             <Sparkles className="h-4 w-4 text-amber-100" strokeWidth={2} aria-hidden />
             <span className="text-xs font-semibold uppercase tracking-wider text-white/95">
-              Saheli AI
+              {t.appName}
             </span>
           </div>
           <button
@@ -127,7 +127,7 @@ export function Onboarding({ onComplete }: Props) {
             onClick={skip}
             className="rounded-full border border-white/30 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur-md transition-colors duration-200 hover:bg-white/20 active:bg-white/25"
           >
-            Skip
+            {t.skip}
           </button>
         </div>
 
@@ -136,7 +136,6 @@ export function Onboarding({ onComplete }: Props) {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          {/* Elevated card — reads as mobile app panel */}
           <div className="flex min-h-0 flex-1 flex-col justify-center py-4">
             <div
               key={index}
@@ -180,15 +179,13 @@ export function Onboarding({ onComplete }: Props) {
                 </p>
 
                 <p className="mt-6 flex items-center justify-center gap-1 text-center text-xs font-medium text-navInactive">
-                  <span>Swipe</span>
+                  <span>{t.onboardSwipe}</span>
                   <ChevronRight className="h-3.5 w-3.5 text-coral/80" aria-hidden />
-                  <span>for more</span>
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Dots — pill active state */}
           <div className="flex justify-center gap-2 pb-5 pt-1">
             {slides.map((_, i) => (
               <button
@@ -200,7 +197,7 @@ export function Onboarding({ onComplete }: Props) {
                     ? "w-8 bg-white shadow-[0_0_12px_rgba(255,255,255,0.5)]"
                     : "w-2.5 bg-white/35 hover:bg-white/50"
                 }`}
-                aria-label={`Go to slide ${i + 1}`}
+                aria-label={`${t.onboardSlide} ${i + 1}`}
                 aria-current={i === index ? "step" : undefined}
               />
             ))}
@@ -216,7 +213,7 @@ export function Onboarding({ onComplete }: Props) {
               aria-hidden
             />
             <span className="relative">
-              {index < SLIDE_COUNT - 1 ? "Next" : "Get Started"}
+              {index < SLIDE_COUNT - 1 ? t.next : t.getStarted}
             </span>
             <ChevronRight
               className="relative h-5 w-5 transition-transform duration-200 group-hover:translate-x-0.5"

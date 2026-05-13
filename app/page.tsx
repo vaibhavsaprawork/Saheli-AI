@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { SplashScreen } from "@/components/SplashScreen";
 import { Onboarding } from "@/components/Onboarding";
 import { ChatLayout } from "@/components/ChatLayout";
+import { useLanguage } from "@/lib/LanguageContext";
 
 const ONBOARD_KEY = "saheli_onboarded";
 
 type Screen = "boot" | "splash" | "onboarding" | "chat";
 
 export default function Home() {
+  const { t } = useLanguage();
   const [screen, setScreen] = useState<Screen>("boot");
 
   const goOnboarding = useCallback(() => setScreen("onboarding"), []);
@@ -29,7 +31,7 @@ export default function Home() {
       <div
         className="min-h-dvh min-w-[375px] bg-surface"
         aria-busy="true"
-        aria-label="Loading"
+        aria-label={t.ariaLoading}
       />
     );
   }
