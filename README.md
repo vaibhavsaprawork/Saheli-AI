@@ -1,5 +1,13 @@
 # Saheli AI
 
+# Saheli AI
+
+Mobile-first Next.js chat assistant for Anganwadi workers under **POSHAN Abhiyaan**.
+
+🚀 **Live Demo:** :contentReference[oaicite:1]{index=1}
+
+UI matches the POSHAN Tracker-style coral theme. Supports English and Hindi in the interface; the model follows the selected language and the worker’s messages.
+
 Mobile-first Next.js chat assistant for Anganwadi workers under **POSHAN Abhiyaan**. UI matches the POSHAN Tracker-style coral theme. Supports English and Hindi in the interface; the model follows the selected language and the worker’s messages.
 
 ## Features
